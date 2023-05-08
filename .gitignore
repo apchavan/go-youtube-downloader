@@ -22,3 +22,6 @@ go.work
 
 # Ignore VSCode workspace
 .vscode
+
+# Ignore JetBrains IDE workspace
+.idea
