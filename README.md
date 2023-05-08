@@ -1,2 +1,1 @@
-# go-youtube-downloader
-Command line app to download YouTube videos.
+Command line app to download videos with YouTube URLs.
