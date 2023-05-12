@@ -13,7 +13,7 @@ From project root enter command,
 
     `go build -o go_youtube_downloader.exe ./cmd/go_youtube_downloader.go`
 
-## Run Directly With Source Code:
+## Run Directly with Source Code:
 
 - Linux/UNIX/Windows :
 
