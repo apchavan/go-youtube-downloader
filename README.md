@@ -1,11 +1,9 @@
 
 Command line app written in [Go](https://go.dev) to download videos using YouTube URLs.
 
-### Important Note:
+## Important Note:
 
 - At present, this app do not work for videos having _age-restrictions_.
-
----
 
 ## Build Binary:
 
@@ -24,8 +22,6 @@ From project root enter command,
 - Linux/UNIX/Windows :
 
     `go run ./cmd/go_youtube_downloader.go`
-
----
 
 ## Thanks to Useful Resources:
 
