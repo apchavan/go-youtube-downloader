@@ -7,9 +7,9 @@ func GetAppNameTitle() string {
 	return " Go YouTube Downloader "
 }
 
-// Return label for `Video Link` input field.
-func GetVideoLinkInputFieldLabel() string {
-	return "Paste/Type YouTube Video Link : "
+// Return label for `Video ID/Link` input field.
+func GetVideoIDLink_InputFieldLabel() string {
+	return "Paste/Type YouTube Video ID/Link : "
 }
 
 // Return label for video related dropdown.
@@ -79,7 +79,7 @@ func GetUsageInfoLabel() string {
 
 // Return string text for app usage info.
 func GetUsageInfoText() string {
-	var line1 string = "(1) Paste/type the YouTube video link in above input field.\n"
+	var line1 string = "(1) Paste/type the YouTube video ID or link in above input field.\n"
 	var line2 string = "(2) Select the required 'Video Quality, FPS, Size & Type' & 'Audio Bitrate, Size & Type' from their dropdowns.\n"
 	var line3 string = "(3) Then click on newly appeared 'Download' button."
 	return (line1 + line2 + line3)
@@ -93,4 +93,14 @@ func GetQuitInfoLabel() string {
 // Return string text for Quit info.
 func GetQuitInfoText() string {
 	return "Keyboard shortcut '<Ctrl> + c'"
+}
+
+// Return label for age-restricted note.
+func GetAgeRestrictedNoteLabel() string {
+	return "Note : "
+}
+
+// Return string text for age-restricted note.
+func GetAgeRestrictedText() string {
+	return "Age-Restricted videos are NOT supported..."
 }
