@@ -1,6 +1,9 @@
 package runner
 
 import (
+	"fmt"
+	"log"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -19,40 +22,98 @@ import (
 //
 // AudioQualities - Collection of all available audio qualities for provided video.
 type YouTubeVideoDetailsStruct struct {
-	VideoUrl             string
+	VideoUrlOrID         string
 	SelectedVideoQuality string
 	SelectedAudioQuality string
 	VideoMetaData        map[string]interface{}
-	VideoQualities       []string
-	AudioQualities       []string
+	VideoQualitiesMap    map[string]string
+	AudioQualitiesMap    map[string]string
 }
 
 // Function to validate & return a boolean status of whether the passed URL is right.
 func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL() bool {
 	// Perform basic check if YouTube is missing from video URL, if so, then it's invalid URL!
 	if !strings.Contains(
-		strings.ToLower(youtubeVideoDetails.VideoUrl),
+		strings.ToLower(youtubeVideoDetails.VideoUrlOrID),
 		"youtube.com",
 	) && !strings.Contains(
-		strings.ToLower(youtubeVideoDetails.VideoUrl),
+		strings.ToLower(youtubeVideoDetails.VideoUrlOrID),
 		"youtu.be",
-	) {
+	) && len(youtubeVideoDetails.VideoUrlOrID) != 11 {
 		return false
 	}
 
-	// TODO: Send POST request to YouTube's internal API
+	// Send POST request to YouTube's internal API to get & store map of metadata in `VideoMetaData`
+	youtubeVideoDetails.VideoMetaData = GetVideoMetadataFromYouTubei(youtubeVideoDetails.VideoUrlOrID)
 
-	// TODO: If 'status' under 'playabilityStatus' is not set to "OK" then video is not available
+	// If 'status' under 'playabilityStatus' is not set to "OK" then video is not available
+	responseBodyMap := youtubeVideoDetails.VideoMetaData
+	playabilityStatusMap := responseBodyMap["playabilityStatus"]
 
-	// TODO: Otherwise convert response & store map of metadata in `VideoMetaData`
-	// youtubeVideoDetails.VideoMetaData =
+	// Check if video status is not set to 'OK', return false
+	if playabilityStatusMap.(map[string]interface{})["status"].(string) != "OK" {
+		return false
+	}
 
-	// TODO: Extract & store video/audio information highest first, lowest last
-	// youtubeVideoDetails.VideoQualities = []string{}
-	// youtubeVideoDetails.AudioQualities = []string{}
+	// Extract & store video/audio information highest first, lowest last order
+	youtubeVideoDetails.extractAdaptiveAudioVideoQualities()
 
 	// Since everything is good, return true
 	return true
+}
+
+// Extract & store video/audio information highest first, lowest last order.
+func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQualities() {
+	responseBodyMap := youtubeVideoDetails.VideoMetaData
+	streamingDataMap := responseBodyMap["streamingData"]
+
+	// Allocate respective maps
+	youtubeVideoDetails.AudioQualitiesMap = make(map[string]string)
+	youtubeVideoDetails.VideoQualitiesMap = make(map[string]string)
+
+	// Iterate over 'adaptiveFormats' key & get the required data.
+	for _, rawAdaptiveFormat := range streamingDataMap.(map[string]interface{})["adaptiveFormats"].([]interface{}) {
+		currentAdaptiveFormat := rawAdaptiveFormat.(map[string]interface{})
+
+		if _, isFound := currentAdaptiveFormat["signatureCipher"]; isFound {
+			log.Fatalf("\n(X) Age-restricted video detected...\n")
+		}
+		// fmt.Printf("\n%d)\n", idx+1)
+
+		formatType := currentAdaptiveFormat["mimeType"].(string)
+		// fmt.Printf("\nformatType >- %v\n", formatType)
+
+		if strings.HasPrefix(formatType, "audio") {
+			// Process the discovered audio format.
+			// Audio Bitrate, Size & Type : 131073 | 5862305 (Converted to MB) | MP4/WEBM
+
+			audioSize, _ := strconv.ParseFloat(currentAdaptiveFormat["contentLength"].(string), 64)
+			audioSize /= 1e+7
+			audioFileType := ""
+			if strings.Contains(formatType, "mp4") {
+				audioFileType = "MP4"
+			} else if strings.Contains(formatType, "webm") {
+				audioFileType = "WEBM"
+			}
+
+			youtubeVideoDetails.AudioQualitiesMap[fmt.Sprintf("%d", int(currentAdaptiveFormat["bitrate"].(float64)))+" bits/s | "+fmt.Sprintf("%f", audioSize)+" MB | "+audioFileType] = currentAdaptiveFormat["url"].(string)
+
+		} else if strings.HasPrefix(formatType, "video") {
+			// Process the discovered video format.
+			// Video Quality, FPS, Size & Type : 1080p60 HDR | 60 fps | 5862305 (Converted to MB) | MP4/WEBM
+
+			videoSize, _ := strconv.ParseFloat(currentAdaptiveFormat["contentLength"].(string), 64)
+			videoSize /= 1e+7
+			videoFileType := ""
+			if strings.Contains(formatType, "mp4") {
+				videoFileType = "MP4"
+			} else if strings.Contains(formatType, "webm") {
+				videoFileType = "WEBM"
+			}
+
+			youtubeVideoDetails.VideoQualitiesMap[currentAdaptiveFormat["qualityLabel"].(string)+" | "+fmt.Sprintf("%d", int(currentAdaptiveFormat["fps"].(float64)))+" fps | "+fmt.Sprintf("%f", videoSize)+" MB | "+videoFileType] = currentAdaptiveFormat["url"].(string)
+		}
+	}
 }
 
 // Function for 'YouTubeVideoDetailsStruct' that actually downloads the video.
