@@ -40,9 +40,9 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 	inputForm := tview.NewForm()
 
 	inputForm = inputForm.AddInputField(
-		GetVideoLinkInputFieldLabel(), "", 0, nil,
+		GetVideoIDLink_InputFieldLabel(), "", 0, nil,
 		func(urlText string) {
-			youtubeVideoDetails.VideoUrl = urlText
+			youtubeVideoDetails.VideoUrlOrID = urlText
 
 			// TODO: Fetch, check video's metadata & set the quality & FPS options array of string if video is valid
 			if urlText != "" {
@@ -52,7 +52,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 
 					// TODO: Pass download finished message with video title
 					inputForm = inputForm.AddTextView(GetStatusLabel(),
-						GetInvalidURLMessage(youtubeVideoDetails.VideoUrl),
+						GetInvalidURLMessage(youtubeVideoDetails.VideoUrlOrID),
 						0, 0, true, true)
 					return
 				} else {
@@ -63,17 +63,24 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				// Create the Video dropdown when proper link text is present in the input field
 				// and no existing input dropdown is already exist.
 				// TODO: Pass actual video qualities highest first, lowest last
+				videoQualities := make([]string, len(youtubeVideoDetails.VideoQualitiesMap))
+				idx := 0
+				for qualityKey := range youtubeVideoDetails.VideoQualitiesMap {
+					videoQualities[idx] = qualityKey
+					idx++
+				}
 				if inputForm.GetFormItemIndex(GetVideoQuality_FPS_Size_Type_DropdownLabel()) == -1 {
 					inputForm = inputForm.AddDropDown(
 						GetVideoQuality_FPS_Size_Type_DropdownLabel(),
-						[]string{
+						videoQualities,
+						/*[]string{
 							" 1440p60 | 60 fps | 68.6 MB | MP4 ",
 							" 1080p60 HDR | 60 fps | 58.6 MB | WEBM ",
 							" 720p60 | 60 fps | 48.6 MB | MP4 ",
 							" 480p | 30 fps | 38.6 MB | WEBM ",
 							" 360p | 24 fps | 28.6 MB | MP4 ",
 							" 144p | 24 fps | 18.6 MB | WEBM ",
-						},
+						},*/
 						0,
 
 						func(option string, optionIndex int) {
@@ -84,17 +91,24 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				// Create the Audio dropdown when proper link text is present in the input field
 				// and no existing input dropdown is already exist.
 				// TODO: Pass actual audio qualities highest first, lowest last
+				audioQualities := make([]string, len(youtubeVideoDetails.AudioQualitiesMap))
+				idx = 0
+				for qualityKey := range youtubeVideoDetails.AudioQualitiesMap {
+					audioQualities[idx] = qualityKey
+					idx++
+				}
 				if inputForm.GetFormItemIndex(GetAudioBitrate_Size_Type_DropdownLabel()) == -1 {
 					inputForm = inputForm.AddDropDown(
 						GetAudioBitrate_Size_Type_DropdownLabel(),
-						[]string{
+						audioQualities,
+						/*[]string{
 							" 631073 | 68.6 MB | MP4 ",
 							" 531073 | 58.6 MB | WEBM ",
 							" 431073 | 48.6 MB | MP4 ",
 							" 331073 | 38.6 MB | WEBM ",
 							" 231073 | 28.6 MB | MP4 ",
 							" 131073 | 18.6 MB | WEBM ",
-						},
+						},*/
 						0,
 
 						func(option string, optionIndex int) {
@@ -108,7 +122,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 						GetDownloadButtonLabel(),
 
 						func() {
-							if youtubeVideoDetails.VideoUrl != "" &&
+							if youtubeVideoDetails.VideoUrlOrID != "" &&
 								youtubeVideoDetails.SelectedVideoQuality != "" &&
 								youtubeVideoDetails.SelectedAudioQuality != "" {
 								// Clear previous status textviews if found any
@@ -121,7 +135,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 								// Add & set textview to show download in progress...
 								// TODO: Pass downloading message with video title
 								inputForm = inputForm.AddTextView(GetStatusLabel(),
-									GetDownloadingMessage(youtubeVideoDetails.VideoUrl),
+									GetDownloadingMessage(youtubeVideoDetails.VideoUrlOrID),
 									0, 0, true, true)
 
 								// Very important to re-draw the screen before actually starting the video download
@@ -144,7 +158,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 
 									// TODO: Pass download finished message with video title
 									inputForm = inputForm.AddTextView(GetStatusLabel(),
-										GetDownloadFinishedMessage(youtubeVideoDetails.VideoUrl),
+										GetDownloadFinishedMessage(youtubeVideoDetails.VideoUrlOrID),
 										0, 0, true, true)
 
 									// In the end, reset the download button.
@@ -172,7 +186,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 			}).SetButtonsAlign(tview.AlignRight)
 	*/
 
-	inputForm = inputForm.SetFocus(inputForm.GetFormItemIndex(GetVideoLinkInputFieldLabel()))
+	inputForm = inputForm.SetFocus(inputForm.GetFormItemIndex(GetVideoIDLink_InputFieldLabel()))
 	inputForm.SetBorder(true).SetTitle(GetAppNameTitle()).SetTitleAlign(tview.AlignCenter)
 	return inputForm
 }
@@ -191,6 +205,12 @@ func getInfoForm() *tview.Form {
 	infoForm = infoForm.AddTextView(
 		GetQuitInfoLabel(),
 		GetQuitInfoText(),
+		0, 1, true, true)
+
+	// Add note about age-restricted videos not supported
+	infoForm = infoForm.AddTextView(
+		GetAgeRestrictedNoteLabel(),
+		GetAgeRestrictedText(),
 		0, 1, true, true)
 
 	// Add GitHub repo link
