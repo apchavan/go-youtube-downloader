@@ -2,7 +2,6 @@ package runner
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -31,8 +30,16 @@ type YouTubeVideoDetailsStruct struct {
 }
 
 // Function to validate & return a boolean status of whether the passed URL is right.
-func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL() bool {
-	// Perform basic check if YouTube is missing from video URL, if so, then it's invalid URL!
+func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL(
+	videoValidityMsgChannel chan string,
+	isValidVideo *bool,
+) {
+	// Make sure the `videoValidityMsgChannel` will be closed
+	defer close(videoValidityMsgChannel)
+
+	// Perform basic check if YouTube itself is missing from video URL,
+	// or total characters != 11 (to consider as video ID);
+	// if yes, then it's invalid URL!
 	if !strings.Contains(
 		strings.ToLower(youtubeVideoDetails.VideoUrlOrID),
 		"youtube.com",
@@ -40,7 +47,9 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL() bool {
 		strings.ToLower(youtubeVideoDetails.VideoUrlOrID),
 		"youtu.be",
 	) && len(youtubeVideoDetails.VideoUrlOrID) != 11 {
-		return false
+		videoValidityMsgChannel <- GetInvalidURLMessage(youtubeVideoDetails.VideoUrlOrID)
+		*isValidVideo = false
+		return
 	}
 
 	// Send POST request to YouTube's internal API to get & store map of metadata in `VideoMetaData`
@@ -52,14 +61,32 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL() bool {
 
 	// Check if video status is not set to 'OK', return false
 	if playabilityStatusMap.(map[string]interface{})["status"].(string) != "OK" {
-		return false
+		videoValidityMsgChannel <- GetInvalidURLMessage(youtubeVideoDetails.VideoUrlOrID)
+		*isValidVideo = false
+		return
+	}
+
+	// If 'signatureCipher' exist in metadata, then the video is Age-Restricted.
+	streamingDataMap := responseBodyMap["streamingData"]
+	// Iterate over 'adaptiveFormats' key & get the required data.
+	for _, rawAdaptiveFormat := range streamingDataMap.(map[string]interface{})["adaptiveFormats"].([]interface{}) {
+		currentAdaptiveFormat := rawAdaptiveFormat.(map[string]interface{})
+
+		if _, isFound := currentAdaptiveFormat["signatureCipher"]; isFound {
+			// Show warning with video title saying it can't be downloaded.
+			videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
+			videoTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
+			videoValidityMsgChannel <- ("WARNING : '" + videoTitle + "' is marked as Age-Restricted video & so can't be downloaded...")
+			*isValidVideo = false
+			return
+		}
 	}
 
 	// Extract & store video/audio information highest first, lowest last order
 	youtubeVideoDetails.extractAdaptiveAudioVideoQualities()
 
-	// Since everything is good, return true
-	return true
+	videoValidityMsgChannel <- ""
+	*isValidVideo = true
 }
 
 // Extract & store video/audio information highest first, lowest last order.
@@ -75,20 +102,16 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQ
 	for _, rawAdaptiveFormat := range streamingDataMap.(map[string]interface{})["adaptiveFormats"].([]interface{}) {
 		currentAdaptiveFormat := rawAdaptiveFormat.(map[string]interface{})
 
-		if _, isFound := currentAdaptiveFormat["signatureCipher"]; isFound {
-			log.Fatalf("\n(X) Age-restricted video detected...\n")
-		}
-		// fmt.Printf("\n%d)\n", idx+1)
-
 		formatType := currentAdaptiveFormat["mimeType"].(string)
-		// fmt.Printf("\nformatType >- %v\n", formatType)
 
 		if strings.HasPrefix(formatType, "audio") {
 			// Process the discovered audio format.
 			// Audio Bitrate, Size & Type : 131073 | 5862305 (Converted to MB) | MP4/WEBM
 
+			// Convert contentLength from bytes to MB
 			audioSize, _ := strconv.ParseFloat(currentAdaptiveFormat["contentLength"].(string), 64)
-			audioSize /= 1e+7
+			audioSize /= (1024 * 1024)
+
 			audioFileType := ""
 			if strings.Contains(formatType, "mp4") {
 				audioFileType = "MP4"
@@ -102,8 +125,10 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQ
 			// Process the discovered video format.
 			// Video Quality, FPS, Size & Type : 1080p60 HDR | 60 fps | 5862305 (Converted to MB) | MP4/WEBM
 
+			// Convert contentLength from bytes to MB
 			videoSize, _ := strconv.ParseFloat(currentAdaptiveFormat["contentLength"].(string), 64)
-			videoSize /= 1e+7
+			videoSize /= (1024 * 1024)
+
 			videoFileType := ""
 			if strings.Contains(formatType, "mp4") {
 				videoFileType = "MP4"
