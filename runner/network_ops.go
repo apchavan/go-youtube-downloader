@@ -58,7 +58,7 @@ type RequestBodyStruct struct {
 }
 
 // Extract YouTube's video ID & return string.
-func getVideoID_FromURL(videoURL string) string {
+func getYouTubeVideoID_FromURL(videoURL string) string {
 	videoURL = strings.TrimSpace(videoURL)
 
 	// If total number of characters is 11, then it's likely to be a video ID itself.
@@ -81,7 +81,7 @@ func getVideoID_FromURL(videoURL string) string {
 func GetVideoMetadataFromYouTubei(videoURL string) map[string]interface{} {
 
 	// Extract ID from `videoURL`
-	videoID := getVideoID_FromURL(videoURL)
+	videoID := getYouTubeVideoID_FromURL(videoURL)
 
 	// Create HTTP client
 	client := &http.Client{}
