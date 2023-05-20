@@ -42,6 +42,11 @@ func GetStatusLabel() string {
 	return "Status : "
 }
 
+// Return label for YouTube video title.
+func GetYouTubeVideoTitleLabel() string {
+	return "YouTube Video Title : "
+}
+
 // Return status message for Downloading Video.
 func GetDownloadingMessage(downloadingVideoTitle string) string {
 	return fmt.Sprintf("Downloading '%s'...", downloadingVideoTitle)
@@ -97,10 +102,10 @@ func GetQuitInfoText() string {
 
 // Return label for age-restricted note.
 func GetAgeRestrictedNoteLabel() string {
-	return "Note : "
+	return "Restriction : "
 }
 
 // Return string text for age-restricted note.
 func GetAgeRestrictedText() string {
-	return "Age-Restricted videos are NOT supported..."
+	return "Age-Restricted videos can NOT be downloaded..."
 }
