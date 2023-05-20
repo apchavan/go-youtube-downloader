@@ -1,6 +1,11 @@
 package runner
 
 import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/rivo/tview"
 )
 
@@ -44,44 +49,46 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 		func(urlText string) {
 			youtubeVideoDetails.VideoUrlOrID = urlText
 
-			// TODO: Fetch, check video's metadata & set the quality & FPS options array of string if video is valid
 			if urlText != "" {
-				if !youtubeVideoDetails.IsValidYouTubeURL() {
-					// Clear controls if already exist
-					removeControls(inputForm, true, true, true, true)
+				videoValidityMsgChannel := make(chan string)
+				isValidVideo := false
+				videoValidityMsg := ""
 
-					// TODO: Pass download finished message with video title
+				// Fetch & check video's metadata to see if video is valid
+				go youtubeVideoDetails.IsValidYouTubeURL(videoValidityMsgChannel, &isValidVideo)
+
+				for msg := range videoValidityMsgChannel {
+					videoValidityMsg = msg
+				}
+
+				if !isValidVideo {
+					// Clear controls if already exist
+					removeControls(inputForm, true, true, true, true, true)
+
+					// Show status message stored by `videoValidityMsg`
 					inputForm = inputForm.AddTextView(GetStatusLabel(),
-						GetInvalidURLMessage(youtubeVideoDetails.VideoUrlOrID),
+						videoValidityMsg,
 						0, 0, true, true)
 					return
 				} else {
-					// Clear previous status textviews if found any
-					removeControls(inputForm, false, false, true, false)
+					// Clear previous status TextViews if found any
+					removeControls(inputForm, false, false, false, true, false)
 				}
+
+				// Show video title in TextView
+				videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
+				videoTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
+				inputForm = inputForm.AddTextView(GetYouTubeVideoTitleLabel(),
+					videoTitle,
+					0, 0, true, true)
 
 				// Create the Video dropdown when proper link text is present in the input field
 				// and no existing input dropdown is already exist.
-				// TODO: Pass actual video qualities highest first, lowest last
-				videoQualities := make([]string, len(youtubeVideoDetails.VideoQualitiesMap))
-				idx := 0
-				for qualityKey := range youtubeVideoDetails.VideoQualitiesMap {
-					videoQualities[idx] = qualityKey
-					idx++
-				}
 				if inputForm.GetFormItemIndex(GetVideoQuality_FPS_Size_Type_DropdownLabel()) == -1 {
 					inputForm = inputForm.AddDropDown(
 						GetVideoQuality_FPS_Size_Type_DropdownLabel(),
-						videoQualities,
-						/*[]string{
-							" 1440p60 | 60 fps | 68.6 MB | MP4 ",
-							" 1080p60 HDR | 60 fps | 58.6 MB | WEBM ",
-							" 720p60 | 60 fps | 48.6 MB | MP4 ",
-							" 480p | 30 fps | 38.6 MB | WEBM ",
-							" 360p | 24 fps | 28.6 MB | MP4 ",
-							" 144p | 24 fps | 18.6 MB | WEBM ",
-						},*/
-						0,
+						getDescendingSize_VideoQualities(youtubeVideoDetails.VideoQualitiesMap),
+						-1,
 
 						func(option string, optionIndex int) {
 							youtubeVideoDetails.SelectedVideoQuality = option
@@ -90,26 +97,11 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 
 				// Create the Audio dropdown when proper link text is present in the input field
 				// and no existing input dropdown is already exist.
-				// TODO: Pass actual audio qualities highest first, lowest last
-				audioQualities := make([]string, len(youtubeVideoDetails.AudioQualitiesMap))
-				idx = 0
-				for qualityKey := range youtubeVideoDetails.AudioQualitiesMap {
-					audioQualities[idx] = qualityKey
-					idx++
-				}
 				if inputForm.GetFormItemIndex(GetAudioBitrate_Size_Type_DropdownLabel()) == -1 {
 					inputForm = inputForm.AddDropDown(
 						GetAudioBitrate_Size_Type_DropdownLabel(),
-						audioQualities,
-						/*[]string{
-							" 631073 | 68.6 MB | MP4 ",
-							" 531073 | 58.6 MB | WEBM ",
-							" 431073 | 48.6 MB | MP4 ",
-							" 331073 | 38.6 MB | WEBM ",
-							" 231073 | 28.6 MB | MP4 ",
-							" 131073 | 18.6 MB | WEBM ",
-						},*/
-						0,
+						getDescendingSize_AudioQualities(youtubeVideoDetails.AudioQualitiesMap),
+						-1,
 
 						func(option string, optionIndex int) {
 							youtubeVideoDetails.SelectedAudioQuality = option
@@ -125,14 +117,14 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 							if youtubeVideoDetails.VideoUrlOrID != "" &&
 								youtubeVideoDetails.SelectedVideoQuality != "" &&
 								youtubeVideoDetails.SelectedAudioQuality != "" {
-								// Clear previous status textviews if found any
-								removeControls(inputForm, false, false, true, false)
+								// Clear previous status TextViews if found any
+								removeControls(inputForm, false, false, false, true, false)
 
 								// Before starting download, change the label & set button disabled
 								inputForm.GetButton(inputForm.GetButtonIndex(GetDownloadButtonLabel())).
 									SetLabel(GetDownloadButtonProgressLabel()).SetDisabled(true)
 
-								// Add & set textview to show download in progress...
+								// Add & set TextView to show download in progress...
 								// TODO: Pass downloading message with video title
 								inputForm = inputForm.AddTextView(GetStatusLabel(),
 									GetDownloadingMessage(youtubeVideoDetails.VideoUrlOrID),
@@ -151,10 +143,10 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 									isDownloadFinished = value
 								}
 
-								// Change textview to show download finished...
+								// Change TextView to show download finished...
 								if isDownloadFinished {
-									// Clear previous status textviews if found any
-									removeControls(inputForm, false, false, true, false)
+									// Clear previous status TextViews if found any
+									removeControls(inputForm, false, false, false, true, false)
 
 									// TODO: Pass download finished message with video title
 									inputForm = inputForm.AddTextView(GetStatusLabel(),
@@ -171,7 +163,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				}
 			} else if urlText == "" {
 				// Clear controls if already exist
-				removeControls(inputForm, true, true, true, true)
+				removeControls(inputForm, true, true, true, true, true)
 			}
 		})
 
@@ -226,7 +218,7 @@ func getInfoForm() *tview.Form {
 // Clears the controls specified by boolean parameters
 func removeControls(
 	inputForm *tview.Form,
-	removeVideoDropdown, removeAudioDropdown, removeStatusTextView, removeDownloadButton bool) {
+	removeVideoDropdown, removeAudioDropdown, removeYouTubeVideoTitleTextView, removeStatusTextView, removeDownloadButton bool) {
 	// Remove the Video dropdown when no text is present in the input field
 	// and atleast 1 existing input dropdown is already exist.
 	if removeVideoDropdown {
@@ -243,7 +235,14 @@ func removeControls(
 		}
 	}
 
-	// Clear previous status textviews if found any
+	// Clear previous YouTube Video Title TextViews if found any
+	if removeYouTubeVideoTitleTextView {
+		for inputForm.GetFormItemIndex(GetYouTubeVideoTitleLabel()) != -1 {
+			inputForm.RemoveFormItem(inputForm.GetFormItemIndex(GetYouTubeVideoTitleLabel()))
+		}
+	}
+
+	// Clear previous status TextViews if found any
 	if removeStatusTextView {
 		for inputForm.GetFormItemIndex(GetStatusLabel()) != -1 {
 			inputForm.RemoveFormItem(inputForm.GetFormItemIndex(GetStatusLabel()))
@@ -256,4 +255,82 @@ func removeControls(
 			inputForm.RemoveButton(inputForm.GetButtonIndex(GetDownloadButtonLabel()))
 		}
 	}
+}
+
+// Returns the video qualities in descending order based on size.
+func getDescendingSize_AudioQualities(audioQualitiesMap map[string]string) []string {
+	if len(audioQualitiesMap) == 0 {
+		return make([]string, 0)
+	}
+
+	audioSizesCollection := make([]float64, 0)
+	for option := range audioQualitiesMap {
+		// fmt.Printf("\n\nV- %s => %s\n", option, url)
+		for idx, v := range strings.Split(option, " | ") {
+			// Index 1 is audio size
+			if idx == 1 {
+				// fmt.Printf("%v) -- %v\n", idx, strings.Split(v, " "))
+				floatSize, _ := strconv.ParseFloat(strings.Split(v, " ")[0], 64)
+				audioSizesCollection = append(
+					audioSizesCollection,
+					floatSize,
+				)
+			}
+		}
+	}
+	// fmt.Printf("\nBefore :- %v\n", audioSizesCollection)
+	sort.Sort(sort.Reverse(sort.Float64Slice(audioSizesCollection)))
+	// fmt.Printf("\nAfter :- %v\n", audioSizesCollection)
+
+	descendingSizeAudioQualities := make([]string, 0)
+	for _, floatSize := range audioSizesCollection {
+		sizeString := fmt.Sprint(floatSize)
+		for key := range audioQualitiesMap {
+			// fmt.Printf("\nstrings.Contains(%v, %v)", key, sizeString)
+			if strings.Contains(key, sizeString) {
+				descendingSizeAudioQualities = append(descendingSizeAudioQualities, key)
+			}
+		}
+	}
+
+	return descendingSizeAudioQualities
+}
+
+// Returns the video qualities in descending order based on size.
+func getDescendingSize_VideoQualities(videoQualitiesMap map[string]string) []string {
+	if len(videoQualitiesMap) == 0 {
+		return make([]string, 0)
+	}
+
+	videoSizesCollection := make([]float64, 0)
+	for option := range videoQualitiesMap {
+		// fmt.Printf("\n\nV- %s => %s\n", option, url)
+		for idx, v := range strings.Split(option, " | ") {
+			// Index 2 is video size
+			if idx == 2 {
+				// fmt.Printf("%v) -- %v\n", idx, strings.Split(v, " "))
+				floatSize, _ := strconv.ParseFloat(strings.Split(v, " ")[0], 64)
+				videoSizesCollection = append(
+					videoSizesCollection,
+					floatSize,
+				)
+			}
+		}
+	}
+	// fmt.Printf("\nBefore :- %v\n", videoSizeCollection)
+	sort.Sort(sort.Reverse(sort.Float64Slice(videoSizesCollection)))
+	// fmt.Printf("\nAfter :- %v\n", videoSizeCollection)
+
+	descendingSizeVideoQualities := make([]string, 0)
+	for _, floatSize := range videoSizesCollection {
+		sizeString := fmt.Sprint(floatSize)
+		for key := range videoQualitiesMap {
+			// fmt.Printf("\nstrings.Contains(%v, %v)", key, sizeString)
+			if strings.Contains(key, sizeString) {
+				descendingSizeVideoQualities = append(descendingSizeVideoQualities, key)
+			}
+		}
+	}
+
+	return descendingSizeVideoQualities
 }
