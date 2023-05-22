@@ -29,7 +29,7 @@ func GetDownloadButtonLabel() string {
 
 // Return label for Download button when download has been started.
 func GetDownloadButtonProgressLabel() string {
-	return "Download in progress..."
+	return "Processing Download..."
 }
 
 // Return label for Quit button.
@@ -47,9 +47,9 @@ func GetYouTubeVideoTitleLabel() string {
 	return "YouTube Video Title : "
 }
 
-// Return status message for Downloading Video.
-func GetDownloadingMessage(downloadingVideoTitle string) string {
-	return fmt.Sprintf("Downloading '%s'...", downloadingVideoTitle)
+// Return status message for Starting download.
+func GetStartingDownloadMessage(downloadingVideoTitle string) string {
+	return fmt.Sprintf("Starting download for '%s'...", downloadingVideoTitle)
 }
 
 // Return status message for Invalid Video URL.
