@@ -117,6 +117,8 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 							if youtubeVideoDetails.VideoUrlOrID != "" &&
 								youtubeVideoDetails.SelectedVideoQuality != "" &&
 								youtubeVideoDetails.SelectedAudioQuality != "" {
+								/* 1. Handle video downloading */
+
 								// Clear previous status TextViews if found any
 								removeControls(inputForm, false, false, false, true, false)
 
@@ -125,22 +127,40 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 									SetLabel(GetDownloadButtonProgressLabel()).SetDisabled(true)
 
 								// Add & set TextView to show download in progress...
-								// TODO: Pass downloading message with video title
 								inputForm = inputForm.AddTextView(GetStatusLabel(),
-									GetDownloadingMessage(youtubeVideoDetails.VideoUrlOrID),
+									GetStartingDownloadMessage(videoTitle),
 									0, 0, true, true)
 
 								// Very important to re-draw the screen before actually starting the video download
 								application.ForceDraw().Sync()
 
-								// TODO: Handle download action
-								downloadStateChannel := make(chan bool)
-								go youtubeVideoDetails.DownloadYouTubeVideo(downloadStateChannel)
-
-								// Check the status whether download has finished
+								// Handle video file download action
+								downloadProgressMsgChannel := make(chan string)
 								isDownloadFinished := false
-								for value := range downloadStateChannel {
-									isDownloadFinished = value
+								go youtubeVideoDetails.DownloadYouTubeVideoFile(
+									downloadProgressMsgChannel,
+									&isDownloadFinished,
+									application,
+								)
+
+								// Clear previous status TextViews if found any
+								removeControls(inputForm, false, false, false, true, false)
+
+								// Set TextView for showing download status
+								videoDownloadProgressTextView := tview.NewTextView().
+									SetLabel(GetStatusLabel()).
+									SetText(fmt.Sprintf("Downloading video file for %s", videoTitle)).
+									SetChangedFunc(func() {
+										// Update the screen as per download progress
+										application.ForceDraw().Sync()
+									})
+
+								// Add TextView to show video download progress
+								inputForm = inputForm.AddFormItem(videoDownloadProgressTextView)
+
+								// Check the download progress & update the TextView
+								for downloadProgressMsg := range downloadProgressMsgChannel {
+									videoDownloadProgressTextView.SetText(downloadProgressMsg)
 								}
 
 								// Change TextView to show download finished...
@@ -148,9 +168,55 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 									// Clear previous status TextViews if found any
 									removeControls(inputForm, false, false, false, true, false)
 
-									// TODO: Pass download finished message with video title
+									// Pass download finished message with video title
 									inputForm = inputForm.AddTextView(GetStatusLabel(),
-										GetDownloadFinishedMessage(youtubeVideoDetails.VideoUrlOrID),
+										GetDownloadFinishedMessage(videoTitle),
+										0, 0, true, true)
+
+									// In the end, reset the download button.
+									// Before starting download, change the label & set button disabled
+									// inputForm.GetButton(inputForm.GetButtonIndex(GetDownloadButtonProgressLabel())).
+									// 	SetLabel(GetDownloadButtonLabel()).SetDisabled(false)
+								}
+
+								/* 2. Handle audio downloading */
+								// Handle video file download action
+								downloadProgressMsgChannel = make(chan string)
+								isDownloadFinished = false
+								go youtubeVideoDetails.DownloadYouTubeAudioFile(
+									downloadProgressMsgChannel,
+									&isDownloadFinished,
+									application,
+								)
+
+								// Clear previous status TextViews if found any
+								removeControls(inputForm, false, false, false, true, false)
+
+								// Set TextView for showing download status
+								audioDownloadProgressTextView := tview.NewTextView().
+									SetLabel(GetStatusLabel()).
+									SetText(fmt.Sprintf("Downloading audio file for %s", videoTitle)).
+									SetChangedFunc(func() {
+										// Update the screen as per download progress
+										application.ForceDraw().Sync()
+									})
+
+								// Add TextView to show video download progress
+								inputForm = inputForm.AddFormItem(audioDownloadProgressTextView)
+
+								// Check the download progress & update the TextView
+								for downloadProgressMsg := range downloadProgressMsgChannel {
+									audioDownloadProgressTextView.SetText(downloadProgressMsg)
+								}
+
+								// Change TextView to show download finished...
+								if isDownloadFinished {
+									// Clear previous status TextViews if found any
+									removeControls(inputForm, false, false, false, true, false)
+
+									// Pass download finished message with video title
+									inputForm = inputForm.AddTextView(GetStatusLabel(),
+										GetDownloadFinishedMessage(videoTitle),
 										0, 0, true, true)
 
 									// In the end, reset the download button.
@@ -266,11 +332,11 @@ func getDescendingSize_AudioQualities(audioQualitiesMap map[string]string) []str
 	audioSizesCollection := make([]float64, 0)
 	for option := range audioQualitiesMap {
 		// fmt.Printf("\n\nV- %s => %s\n", option, url)
-		for idx, v := range strings.Split(option, " | ") {
+		for idx, subString := range strings.Split(option, " | ") {
 			// Index 1 is audio size
 			if idx == 1 {
 				// fmt.Printf("%v) -- %v\n", idx, strings.Split(v, " "))
-				floatSize, _ := strconv.ParseFloat(strings.Split(v, " ")[0], 64)
+				floatSize, _ := strconv.ParseFloat(strings.Split(subString, " ")[0], 64)
 				audioSizesCollection = append(
 					audioSizesCollection,
 					floatSize,
@@ -305,11 +371,11 @@ func getDescendingSize_VideoQualities(videoQualitiesMap map[string]string) []str
 	videoSizesCollection := make([]float64, 0)
 	for option := range videoQualitiesMap {
 		// fmt.Printf("\n\nV- %s => %s\n", option, url)
-		for idx, v := range strings.Split(option, " | ") {
+		for idx, subString := range strings.Split(option, " | ") {
 			// Index 2 is video size
 			if idx == 2 {
 				// fmt.Printf("%v) -- %v\n", idx, strings.Split(v, " "))
-				floatSize, _ := strconv.ParseFloat(strings.Split(v, " ")[0], 64)
+				floatSize, _ := strconv.ParseFloat(strings.Split(subString, " ")[0], 64)
 				videoSizesCollection = append(
 					videoSizesCollection,
 					floatSize,
