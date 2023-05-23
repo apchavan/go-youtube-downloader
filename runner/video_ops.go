@@ -157,7 +157,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 ) {
 	// Get video title
 	videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
-	videoTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
+	audioTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
 
 	// Video file extension
 	fileExtension := ""
@@ -178,9 +178,9 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 	}
 
 	// Remove special characters from name
-	videoTitle = regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(videoTitle, "")
+	audioTitle = regexp.MustCompile(`[^a-zA-Z0-9 ]+`).ReplaceAllString(audioTitle, "")
 	// Generate a file name to save video
-	fileName := strings.TrimSpace(videoTitle) + "_AF_AUD." + strings.ToLower(fileExtension)
+	fileName := strings.TrimSpace(audioTitle) + "_AF_AUD." + strings.ToLower(fileExtension)
 
 	// Create blank file to save video data
 	audioFile, err := os.Create(fileName)
@@ -190,7 +190,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 	defer audioFile.Close()
 
 	// Set download URL
-	downloadUrl := youtubeVideoDetails.VideoQualitiesMap[youtubeVideoDetails.SelectedAudioQuality]
+	downloadUrl := youtubeVideoDetails.AudioQualitiesMap[youtubeVideoDetails.SelectedAudioQuality]
 
 	// Get total download size in bytes to set range header while downloading
 	totalDownloadSizeBytes := totalDownloadSizeMB * (1024 * 1024)
@@ -203,8 +203,8 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 		log.Fatalf("\n(*) Error while creating GET request object... \n%v\n", err)
 	}
 
-	// Below stepSizeBytes is almost equal to 1.25 MB
-	stepSizeBytes := float64(1310720)
+	// Below stepSizeBytes is almost equal to 0.5 MB
+	stepSizeBytes := float64(524288)
 	byteAdditionFactor := stepSizeBytes - 1.0
 	totalBytesCopied := float64(0.0)
 
@@ -214,17 +214,17 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 		// Set header to get range of bytes
 		getReq.Header.Set("Range", fmt.Sprintf("bytes=%.0f-%.0f", idx, idx+byteAdditionFactor))
 
-		respVideoData, err := httpClient.Do(getReq)
+		respAudioData, err := httpClient.Do(getReq)
 		if err != nil {
 			log.Fatalf("\n(*) Error while fetching video data... \n%v\n", err)
 		}
-		defer respVideoData.Body.Close()
+		defer respAudioData.Body.Close()
 		getEndTime := time.Now()
 
 		// Copy/store the downloaded video data
 		// currentBytesCopied, err := io.Copy(videoFile, respVideoData.Body)
 		copyStartTime := time.Now()
-		currentBytesCopied, err := io.CopyN(audioFile, respVideoData.Body, respVideoData.ContentLength)
+		currentBytesCopied, err := io.CopyN(audioFile, respAudioData.Body, respAudioData.ContentLength)
 		if err != nil {
 			log.Fatalf("\n(*) Error while copying video data... \n%v\n", err)
 		}
@@ -304,11 +304,11 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeVideoFile(
 	}
 
 	// stepSizeBytes := uint64(10000000)
-	// stepSizeBytes := float64(524288)
+	// stepSizeBytes := float64(1310720)
 	// stepSizeBytes := float64(10240)
 
-	// Below stepSizeBytes is almost equal to 1.25 MB
-	stepSizeBytes := float64(1310720)
+	// Below stepSizeBytes is almost equal to 0.5 MB
+	stepSizeBytes := float64(524288)
 	byteAdditionFactor := stepSizeBytes - 1.0
 	totalBytesCopied := float64(0.0)
 
@@ -332,6 +332,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeVideoFile(
 		if err != nil {
 			log.Fatalf("\n(*) Error while copying video data... \n%v\n", err)
 		}
+
 		copyEndTime := time.Now()
 
 		totalBytesCopied += float64(currentBytesCopied)
