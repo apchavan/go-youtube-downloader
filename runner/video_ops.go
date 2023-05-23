@@ -208,7 +208,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 	byteAdditionFactor := stepSizeBytes - 1.0
 	totalBytesCopied := float64(0.0)
 
-	// Loop using Range header to download `stepSizeBytes` bytes chunks of video data in `fileName` from `downloadUrl`
+	// Loop using Range header to download `stepSizeBytes` bytes chunks of audio data in `fileName` from `downloadUrl`
 	for idx := float64(0.0); idx < totalDownloadSizeBytes; idx += stepSizeBytes {
 		getStartTime := time.Now()
 		// Set header to get range of bytes
@@ -216,17 +216,17 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 
 		respAudioData, err := httpClient.Do(getReq)
 		if err != nil {
-			log.Fatalf("\n(*) Error while fetching video data... \n%v\n", err)
+			log.Fatalf("\n(*) Error while fetching audio data... \n%v\n", err)
 		}
 		defer respAudioData.Body.Close()
 		getEndTime := time.Now()
 
-		// Copy/store the downloaded video data
-		// currentBytesCopied, err := io.Copy(videoFile, respVideoData.Body)
+		// Copy/store the downloaded audio data
+		// currentBytesCopied, err := io.Copy(audioFile, respVideoData.Body)
 		copyStartTime := time.Now()
 		currentBytesCopied, err := io.CopyN(audioFile, respAudioData.Body, respAudioData.ContentLength)
 		if err != nil {
-			log.Fatalf("\n(*) Error while copying video data... \n%v\n", err)
+			log.Fatalf("\n(*) Error while copying audio data... \n%v\n", err)
 		}
 		copyEndTime := time.Now()
 
