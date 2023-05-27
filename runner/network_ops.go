@@ -57,7 +57,7 @@ type RequestBodyStruct struct {
 	ContentCheckOk bool   `json:"contentCheckOk"`
 }
 
-// Extract YouTube's video ID & return string.
+// Extract YouTube's video ID from provided `videoURL` & return as string.
 func getYouTubeVideoID_FromURL(videoURL string) string {
 	videoURL = strings.TrimSpace(videoURL)
 
@@ -68,10 +68,11 @@ func getYouTubeVideoID_FromURL(videoURL string) string {
 
 	// Extract video's ID using video URL.
 	videoURL = strings.TrimSuffix(videoURL, "/")
+	videoURL = strings.TrimSuffix(videoURL, "?feature=share")
 
 	videoURL = strings.ReplaceAll(videoURL, "https://www.youtube.com/watch?v=", "")
-
 	videoURL = strings.ReplaceAll(videoURL, "https://youtu.be/", "")
+	videoURL = strings.ReplaceAll(videoURL, "https://youtube.com/shorts/", "")
 
 	return videoURL
 }
