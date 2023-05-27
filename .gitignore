@@ -25,3 +25,9 @@ go.work
 
 # Ignore JetBrains IDE workspace
 .idea
+
+# Ignore any audio/video files
+*.mp4
+*.mp4*
+*.webm
+*.webm*
