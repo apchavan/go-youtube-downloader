@@ -44,3 +44,5 @@ From project root enter command,
 - [Efficient File Download In Golang: A Comprehensive Guide](https://marketsplash.com/tutorials/go/golang-download/)
 
 - [Golang Download Files Example](https://golangdocs.com/golang-download-files)
+
+- [Team NewPipe](https://github.com/TeamNewPipe)
