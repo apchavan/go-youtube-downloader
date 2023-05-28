@@ -42,3 +42,5 @@ From project root enter command,
 - [Youtubei](https://github.com/SuspiciousLookingOwl/youtubei) - Get Youtube data such as videos, playlists, channels, video information & comments, related videos, up next video, and more!
 
 - [Efficient File Download In Golang: A Comprehensive Guide](https://marketsplash.com/tutorials/go/golang-download/)
+
+- [Golang Download Files Example](https://golangdocs.com/golang-download-files)
