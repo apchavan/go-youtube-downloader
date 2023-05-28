@@ -1,6 +1,8 @@
 
 Command line app written in [Go](https://go.dev) to download videos using YouTube URLs.
 
+---
+
 ## Important Note:
 
 - At present, this app do not work for videos having _age-restrictions_.
@@ -23,7 +25,9 @@ From project root enter command,
 
     `go run ./cmd/go_youtube_downloader.go`
 
-## Thanks to Useful Resources:
+---
+
+## Special Thanks to Resources:
 
 - [Reverse-Engineering YouTube: Revisited](https://tyrrrz.me/blog/reverse-engineering-youtube-revisited) - Blog explaining YouTube's internal APIs.
 
@@ -32,3 +36,5 @@ From project root enter command,
 - [YT-DLP](https://github.com/yt-dlp/yt-dlp) - A youtube-dl fork with additional features and fixes
 
 - [Youtubei](https://github.com/SuspiciousLookingOwl/youtubei) - Get Youtube data such as videos, playlists, channels, video information & comments, related videos, up next video, and more!
+
+- [Efficient File Download In Golang: A Comprehensive Guide](https://marketsplash.com/tutorials/go/golang-download/)
