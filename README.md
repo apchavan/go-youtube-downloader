@@ -1,8 +1,6 @@
 
 Command line app written in [Go](https://go.dev) to download videos using YouTube URLs.
 
----
-
 ## Build Binary:
 
 From project root enter command,
@@ -21,8 +19,6 @@ From project root enter command,
 
     `go run ./cmd/go_youtube_downloader.go`
 
----
-
 ## Important Notes:
 
 - Systems must have [FFmpeg](https://ffmpeg.org/) installed or have static binary in project directory to merge downloaded separate video & audio streams into a single file.
@@ -30,8 +26,6 @@ From project root enter command,
 - _Age-restricted_ videos can not be downloaded due to YouTube's Signature Ciphering.
 
 - YouTube have bandwidth limitations for each incoming request, around 10 MB per request. If any request gets more data than this size limit, then further requests will throttle download or connection may get terminated. So, to get better performance when downloading data & writing it to output file, it's divided into smaller chunks for consistency. Based on selected quality & size, the download time would differ.
-
----
 
 ## Special Thanks to Resources:
 
