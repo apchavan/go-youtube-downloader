@@ -1,4 +1,6 @@
 
+# Go YouTube Downloader
+
 Command line app written in [Go](https://go.dev) to download videos using YouTube URLs.
 
 ## Build Binary:
