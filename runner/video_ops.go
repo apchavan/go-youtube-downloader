@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -27,17 +28,19 @@ import (
 // VideoQualities - Collection of all available video qualities for provided video.
 //
 // AudioQualities - Collection of all available audio qualities for provided video.
-type YouTubeVideoDetailsStruct struct {
-	VideoUrlOrID         string
-	SelectedVideoQuality string
-	SelectedAudioQuality string
-	VideoMetaData        map[string]interface{}
-	VideoQualitiesMap    map[string]string
-	AudioQualitiesMap    map[string]string
+type YouTubeDetailsStruct struct {
+	VideoUrlOrID            string                 // Store the YouTube's video URL or ID
+	SelectedVideoQuality    string                 // Store the user's selected video quality
+	SelectedAudioQuality    string                 // Store the user's selected audio quality
+	VideoMetaData           map[string]interface{} // Store the metadata of `VideoUrlOrID` fetched from YouTube
+	VideoQualitiesMap       map[string]string      // Store map of displayed video qualities to their download URLs
+	AudioQualitiesMap       map[string]string      // Store map of displayed audio qualities to their download URLs
+	DownloadedVideoFilePath string                 // Store file path where video is downloaded
+	DownloadedAudioFilePath string                 // Store file path where audio is downloaded
 }
 
 // Function to validate & return a boolean status of whether the passed URL is right.
-func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL(
+func (youtubeDetails *YouTubeDetailsStruct) IsValidYouTubeURL(
 	videoValidityMsgChannel chan string,
 	isValidVideo *bool,
 ) {
@@ -48,27 +51,27 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL(
 	// or total characters != 11 (to consider as video ID);
 	// if yes, then it's invalid URL!
 	if !strings.Contains(
-		strings.ToLower(youtubeVideoDetails.VideoUrlOrID),
+		strings.ToLower(youtubeDetails.VideoUrlOrID),
 		"youtube.com",
 	) && !strings.Contains(
-		strings.ToLower(youtubeVideoDetails.VideoUrlOrID),
+		strings.ToLower(youtubeDetails.VideoUrlOrID),
 		"youtu.be",
-	) && len(youtubeVideoDetails.VideoUrlOrID) != 11 {
-		videoValidityMsgChannel <- GetInvalidURLMessage(youtubeVideoDetails.VideoUrlOrID)
+	) && len(youtubeDetails.VideoUrlOrID) != 11 {
+		videoValidityMsgChannel <- GetInvalidURLMessage(youtubeDetails.VideoUrlOrID)
 		*isValidVideo = false
 		return
 	}
 
 	// Send POST request to YouTube's internal API to get & store map of metadata in `VideoMetaData`
-	youtubeVideoDetails.VideoMetaData = GetVideoMetadataFromYouTubei(youtubeVideoDetails.VideoUrlOrID)
+	youtubeDetails.VideoMetaData = GetVideoMetadataFromYouTubei(youtubeDetails.VideoUrlOrID)
 
 	// If 'status' under 'playabilityStatus' is not set to "OK" then video is not available
-	responseBodyMap := youtubeVideoDetails.VideoMetaData
+	responseBodyMap := youtubeDetails.VideoMetaData
 	playabilityStatusMap := responseBodyMap["playabilityStatus"]
 
 	// Check if video status is not set to 'OK', return false
 	if playabilityStatusMap.(map[string]interface{})["status"].(string) != "OK" {
-		videoValidityMsgChannel <- GetInvalidURLMessage(youtubeVideoDetails.VideoUrlOrID)
+		videoValidityMsgChannel <- GetInvalidURLMessage(youtubeDetails.VideoUrlOrID)
 		*isValidVideo = false
 		return
 	}
@@ -81,7 +84,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL(
 
 		if _, isFound := currentAdaptiveFormat["signatureCipher"]; isFound {
 			// Show warning with video title saying it can't be downloaded.
-			videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
+			videoDetailsMap := youtubeDetails.VideoMetaData["videoDetails"]
 			videoTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
 
 			videoValidityMsgChannel <- ("WARNING : '" + videoTitle + "' is marked as Age-Restricted video & so can't be downloaded...")
@@ -91,20 +94,20 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) IsValidYouTubeURL(
 	}
 
 	// Extract & store video/audio information highest first, lowest last order
-	youtubeVideoDetails.extractAdaptiveAudioVideoQualities()
+	youtubeDetails.extractAdaptiveAudioVideoQualities()
 
 	videoValidityMsgChannel <- ""
 	*isValidVideo = true
 }
 
 // Extract & store video/audio information highest first, lowest last order.
-func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQualities() {
-	responseBodyMap := youtubeVideoDetails.VideoMetaData
+func (youtubeDetails *YouTubeDetailsStruct) extractAdaptiveAudioVideoQualities() {
+	responseBodyMap := youtubeDetails.VideoMetaData
 	streamingDataMap := responseBodyMap["streamingData"]
 
 	// Allocate respective maps
-	youtubeVideoDetails.AudioQualitiesMap = make(map[string]string)
-	youtubeVideoDetails.VideoQualitiesMap = make(map[string]string)
+	youtubeDetails.AudioQualitiesMap = make(map[string]string)
+	youtubeDetails.VideoQualitiesMap = make(map[string]string)
 
 	// Iterate over 'adaptiveFormats' key & get the required data.
 	for _, rawAdaptiveFormat := range streamingDataMap.(map[string]interface{})["adaptiveFormats"].([]interface{}) {
@@ -114,7 +117,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQ
 
 		if strings.HasPrefix(formatType, "audio") {
 			// Process the discovered audio format.
-			// Audio Bitrate, Size & Type : 131073 | 5862305 (Converted to MB) | MP4/WEBM
+			// Audio Bitrate, Size & Type : 131073 bits/s | 5862305 (Converted to MB) | MP4/WEBM
 
 			// Convert contentLength from bytes to MB
 			audioSize, _ := strconv.ParseFloat(currentAdaptiveFormat["contentLength"].(string), 64)
@@ -127,7 +130,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQ
 				audioFileType = "WEBM"
 			}
 
-			youtubeVideoDetails.AudioQualitiesMap[fmt.Sprintf("%d", int(currentAdaptiveFormat["bitrate"].(float64)))+" bits/s | "+fmt.Sprintf("%f", audioSize)+" MB | "+audioFileType] = currentAdaptiveFormat["url"].(string)
+			youtubeDetails.AudioQualitiesMap[fmt.Sprintf("%d", int(currentAdaptiveFormat["bitrate"].(float64)))+" bits/s | "+fmt.Sprintf("%f", audioSize)+" MB | "+audioFileType] = currentAdaptiveFormat["url"].(string)
 
 		} else if strings.HasPrefix(formatType, "video") {
 			// Process the discovered video format.
@@ -144,19 +147,22 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) extractAdaptiveAudioVideoQ
 				videoFileType = "WEBM"
 			}
 
-			youtubeVideoDetails.VideoQualitiesMap[currentAdaptiveFormat["qualityLabel"].(string)+" | "+fmt.Sprintf("%d", int(currentAdaptiveFormat["fps"].(float64)))+" fps | "+fmt.Sprintf("%f", videoSize)+" MB | "+videoFileType] = currentAdaptiveFormat["url"].(string)
+			youtubeDetails.VideoQualitiesMap[currentAdaptiveFormat["qualityLabel"].(string)+" | "+fmt.Sprintf("%d", int(currentAdaptiveFormat["fps"].(float64)))+" fps | "+fmt.Sprintf("%f", videoSize)+" MB | "+videoFileType] = currentAdaptiveFormat["url"].(string)
 		}
 	}
 }
 
-// Function for 'YouTubeVideoDetailsStruct' that downloads the audio file from YouTube.
-func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
+// Function for 'YouTubeDetailsStruct' that downloads the audio file from YouTube.
+func (youtubeDetails *YouTubeDetailsStruct) DownloadYouTubeAudioFile(
 	downloadProgressMsgChannel chan string,
 	isDownloadFinished *bool,
 	application *tview.Application,
 ) {
+	// Make sure `downloadProgressMsgChannel` will be closed
+	defer close(downloadProgressMsgChannel)
+
 	// Get video title
-	videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
+	videoDetailsMap := youtubeDetails.VideoMetaData["videoDetails"]
 	audioTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
 
 	// Video file extension
@@ -165,7 +171,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 	// Total download size in MB
 	totalDownloadSizeMB := 0.0
 
-	for idx, subString := range strings.Split(youtubeVideoDetails.SelectedAudioQuality, " | ") {
+	for idx, subString := range strings.Split(youtubeDetails.SelectedAudioQuality, " | ") {
 		// Index 1 is video size
 		if idx == 1 {
 			totalDownloadSizeMB, _ = strconv.ParseFloat(strings.Split(subString, " ")[0], 64)
@@ -190,7 +196,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 	defer audioFile.Close()
 
 	// Set download URL
-	downloadUrl := youtubeVideoDetails.AudioQualitiesMap[youtubeVideoDetails.SelectedAudioQuality]
+	downloadUrl := youtubeDetails.AudioQualitiesMap[youtubeDetails.SelectedAudioQuality]
 
 	// Get total download size in bytes to set range header while downloading
 	totalDownloadSizeBytes := totalDownloadSizeMB * (1024 * 1024)
@@ -202,61 +208,104 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeAudioFile(
 	if err != nil {
 		log.Fatalf("\n(*) Error while creating GET request object... \n%v\n", err)
 	}
+	// getReq.Close = true // https://stackoverflow.com/a/19006050
 
-	// Below stepSizeBytes is almost equal to 0.5 MB
-	stepSizeBytes := float64(524288)
+	stepSizeBytes := GetStepSizeBytes()
 	byteAdditionFactor := stepSizeBytes - 1.0
 	totalBytesCopied := float64(0.0)
 
+	downloadStartTime := time.Now()
+
 	// Loop using Range header to download `stepSizeBytes` bytes chunks of audio data in `fileName` from `downloadUrl`
 	for idx := float64(0.0); idx < totalDownloadSizeBytes; idx += stepSizeBytes {
-		getStartTime := time.Now()
+
 		// Set header to get range of bytes
 		getReq.Header.Set("Range", fmt.Sprintf("bytes=%.0f-%.0f", idx, idx+byteAdditionFactor))
 
 		respAudioData, err := httpClient.Do(getReq)
 		if err != nil {
-			log.Fatalf("\n(*) Error while fetching audio data... \n%v\n", err)
+			// Sometimes the request get failed, then create new request object and
+			// again try to continue fetching the video bytes
+			getReq, err = http.NewRequest("GET", downloadUrl, nil)
+
+			// Handle the worst case by getting new `downloadUrl`
+			// and then re-construct new request object
+			if err != nil {
+				videoValidityMsgChannel := make(chan string)
+				isValidVideo := false
+				youtubeDetails.IsValidYouTubeURL(
+					videoValidityMsgChannel,
+					&isValidVideo,
+				)
+				<-videoValidityMsgChannel
+
+				// Set download URL
+				downloadUrl := youtubeDetails.AudioQualitiesMap[youtubeDetails.SelectedAudioQuality]
+
+				getReq, _ = http.NewRequest("GET", downloadUrl, nil)
+			}
+
+			// To match with correct bytes range, subtract `stepSizeBytes`
+			// so it'll more precise to missing bytes when continuing loop
+			idx -= stepSizeBytes
+
+			downloadProgressMsgChannel <- "Re-created new HTTP request object..."
+			continue
 		}
-		defer respAudioData.Body.Close()
-		getEndTime := time.Now()
 
 		// Copy/store the downloaded audio data
-		// currentBytesCopied, err := io.Copy(audioFile, respVideoData.Body)
-		copyStartTime := time.Now()
-		currentBytesCopied, err := io.CopyN(audioFile, respAudioData.Body, respAudioData.ContentLength)
-		if err != nil {
-			log.Fatalf("\n(*) Error while copying audio data... \n%v\n", err)
-		}
-		copyEndTime := time.Now()
+		fileOpStartTime := time.Now()
 
-		totalBytesCopied += float64(currentBytesCopied)
+		// audioFile.ReadFrom(respAudioData.Body)
+		// io.CopyN(audioFile, respAudioData.Body, respAudioData.ContentLength)
+		io.Copy(audioFile, respAudioData.Body)
 
+		fileOpEndTime := time.Now()
+
+		totalBytesCopied += float64(respAudioData.ContentLength)
 		downloadProgressMsg := fmt.Sprintf(
-			"%f MB audio file downloaded of %f MB (Time taken: Download=%v, Storage Write=%v)",
+			"Downloading audio file; done %.2f MB of %.2f MB...\nAudio data file writing time: %v",
 			totalBytesCopied/(1024*1024),
 			totalDownloadSizeMB,
-			getEndTime.Sub(getStartTime),
-			copyEndTime.Sub(copyStartTime),
+			fileOpEndTime.Sub(fileOpStartTime),
 		)
+
 		downloadProgressMsgChannel <- downloadProgressMsg
+
+		// Close the response body before starting next iteration.
+		// This is more performant than using `defer` statement.
+		respAudioData.Body.Close()
 	}
+
+	downloadEndTime := time.Now()
+
+	downloadProgressMsgChannel <- fmt.Sprintf(
+		"Written audio file as '%s'...\nDownload time : %v\n",
+		audioFile.Name(),
+		downloadEndTime.Sub(downloadStartTime),
+	)
+
+	// Store the file path where audio is downloaded.
+	youtubeDetails.DownloadedAudioFilePath, _ = filepath.Abs(audioFile.Name())
+
+	// Sleep for 5 seconds just to make sure above message is displayed.
+	time.Sleep(time.Second * 5)
 
 	// Set the downloading status as completed
 	*isDownloadFinished = true
-
-	// Close channel to indicate task is completed & this channel will not provide anything in future
-	close(downloadProgressMsgChannel)
 }
 
-// Function for 'YouTubeVideoDetailsStruct' that downloads the video file from YouTube.
-func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeVideoFile(
+// Function for 'YouTubeDetailsStruct' that downloads the video file from YouTube.
+func (youtubeDetails *YouTubeDetailsStruct) DownloadYouTubeVideoFile(
 	downloadProgressMsgChannel chan string,
 	isDownloadFinished *bool,
 	application *tview.Application,
 ) {
+	// Make sure `downloadProgressMsgChannel` will be closed
+	defer close(downloadProgressMsgChannel)
+
 	// Get video title
-	videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
+	videoDetailsMap := youtubeDetails.VideoMetaData["videoDetails"]
 	videoTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
 
 	// Video file extension
@@ -265,7 +314,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeVideoFile(
 	// Total download size in MB
 	totalDownloadSizeMB := 0.0
 
-	for idx, subString := range strings.Split(youtubeVideoDetails.SelectedVideoQuality, " | ") {
+	for idx, subString := range strings.Split(youtubeDetails.SelectedVideoQuality, " | ") {
 		// Index 2 is video size
 		if idx == 2 {
 			totalDownloadSizeMB, _ = strconv.ParseFloat(strings.Split(subString, " ")[0], 64)
@@ -290,7 +339,7 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeVideoFile(
 	defer videoFile.Close()
 
 	// Set download URL
-	downloadUrl := youtubeVideoDetails.VideoQualitiesMap[youtubeVideoDetails.SelectedVideoQuality]
+	downloadUrl := youtubeDetails.VideoQualitiesMap[youtubeDetails.SelectedVideoQuality]
 
 	// Get total download size in bytes to set range header while downloading
 	totalDownloadSizeBytes := totalDownloadSizeMB * (1024 * 1024)
@@ -302,54 +351,87 @@ func (youtubeVideoDetails *YouTubeVideoDetailsStruct) DownloadYouTubeVideoFile(
 	if err != nil {
 		log.Fatalf("\n(*) Error while creating GET request object... \n%v\n", err)
 	}
+	// getReq.Close = true // https://stackoverflow.com/a/19006050
 
-	// stepSizeBytes := uint64(10000000)
-	// stepSizeBytes := float64(1310720)
-	// stepSizeBytes := float64(10240)
-
-	// Below stepSizeBytes is almost equal to 0.5 MB
-	stepSizeBytes := float64(524288)
+	stepSizeBytes := GetStepSizeBytes()
 	byteAdditionFactor := stepSizeBytes - 1.0
 	totalBytesCopied := float64(0.0)
 
+	downloadStartTime := time.Now()
+
 	// Loop using Range header to download `stepSizeBytes` bytes chunks of video data in `fileName` from `downloadUrl`
 	for idx := float64(0.0); idx < totalDownloadSizeBytes; idx += stepSizeBytes {
-		getStartTime := time.Now()
+
 		// Set header to get range of bytes
 		getReq.Header.Set("Range", fmt.Sprintf("bytes=%.0f-%.0f", idx, idx+byteAdditionFactor))
 
 		respVideoData, err := httpClient.Do(getReq)
 		if err != nil {
-			log.Fatalf("\n(*) Error while fetching video data... \n%v\n", err)
+			// Sometimes the request get failed, then create new request object and
+			// again try to continue fetching the video bytes
+			getReq, err = http.NewRequest("GET", downloadUrl, nil)
+
+			// Handle the worst case by getting new `downloadUrl`
+			// and then re-construct new request object
+			if err != nil {
+				videoValidityMsgChannel := make(chan string)
+				isValidVideo := false
+				youtubeDetails.IsValidYouTubeURL(
+					videoValidityMsgChannel,
+					&isValidVideo,
+				)
+				<-videoValidityMsgChannel
+
+				// Set download URL
+				downloadUrl := youtubeDetails.VideoQualitiesMap[youtubeDetails.SelectedVideoQuality]
+
+				getReq, _ = http.NewRequest("GET", downloadUrl, nil)
+			}
+
+			// To match with correct bytes range, subtract `stepSizeBytes`
+			// so it'll more precise to missing bytes when continuing loop
+			idx -= stepSizeBytes
+
+			downloadProgressMsgChannel <- "Re-created new HTTP request object..."
+			continue
 		}
-		defer respVideoData.Body.Close()
-		getEndTime := time.Now()
+		// Copy/store the downloaded video data in file
+		fileOpStartTime := time.Now()
 
-		// Copy/store the downloaded video data
-		// currentBytesCopied, err := io.Copy(videoFile, respVideoData.Body)
-		copyStartTime := time.Now()
-		currentBytesCopied, err := io.CopyN(videoFile, respVideoData.Body, respVideoData.ContentLength)
-		if err != nil {
-			log.Fatalf("\n(*) Error while copying video data... \n%v\n", err)
-		}
+		// videoFile.ReadFrom(respVideoData.Body)
+		// io.CopyN(videoFile, respVideoData.Body, respVideoData.ContentLength)
+		io.Copy(videoFile, respVideoData.Body)
 
-		copyEndTime := time.Now()
+		fileOpEndTime := time.Now()
 
-		totalBytesCopied += float64(currentBytesCopied)
-
+		totalBytesCopied += float64(respVideoData.ContentLength)
 		downloadProgressMsg := fmt.Sprintf(
-			"%f MB video file downloaded of %f MB (Time taken: Download=%v, Storage Write=%v)",
+			"Downloading video file; done %.2f MB of %.2f MB...\nVideo data file writing time: %v",
 			totalBytesCopied/(1024*1024),
 			totalDownloadSizeMB,
-			getEndTime.Sub(getStartTime),
-			copyEndTime.Sub(copyStartTime),
+			fileOpEndTime.Sub(fileOpStartTime),
 		)
 		downloadProgressMsgChannel <- downloadProgressMsg
+
+		// Close the response body before starting next iteration.
+		// This is more performant than using `defer` statement.
+		respVideoData.Body.Close()
 	}
+
+	downloadEndTime := time.Now()
+
+	downloadProgressMsgChannel <- fmt.Sprintf(
+		"Written video file as '%s'...\nDownload time : %v\n",
+		videoFile.Name(),
+		downloadEndTime.Sub(downloadStartTime),
+	)
+
+	// Store the file path where video is downloaded.
+	youtubeDetails.DownloadedVideoFilePath, _ = filepath.Abs(videoFile.Name())
+
+	// Sleep for 5 seconds just to make sure above message is displayed.
+	time.Sleep(time.Second * 5)
 
 	// Set the downloading status as completed
 	*isDownloadFinished = true
-
-	// Close channel to indicate task is completed & this channel will not provide anything in future
-	close(downloadProgressMsgChannel)
 }
