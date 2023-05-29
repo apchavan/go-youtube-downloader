@@ -2,6 +2,12 @@ package runner
 
 import "fmt"
 
+// Returns the byte value 83886.08 for Range header in GET request
+// i.e. almost equal to 0.08 MB.
+func GetStepSizeBytes() float64 {
+	return float64(83886.08)
+}
+
 // Returns the string of application's name for title.
 func GetAppNameTitle() string {
 	return " Go YouTube Downloader "
@@ -28,8 +34,8 @@ func GetDownloadButtonLabel() string {
 }
 
 // Return label for Download button when download has been started.
-func GetDownloadButtonProgressLabel() string {
-	return "Processing Download..."
+func GetDownloadButtonProcessingLabel() string {
+	return "Processing..."
 }
 
 // Return label for Quit button.
@@ -86,26 +92,45 @@ func GetUsageInfoLabel() string {
 func GetUsageInfoText() string {
 	var line1 string = "(1) Paste/type the YouTube video ID or link in above input field.\n"
 	var line2 string = "(2) Select the required 'Video Quality, FPS, Size & Type' & 'Audio Bitrate, Size & Type' from their dropdowns.\n"
-	var line3 string = "(3) Then click on newly appeared 'Download' button."
+	var line3 string = "(3) Then click on newly appeared 'Download' button. Also visit link mentioned in 'Important Notes & Limitations' below."
 	return (line1 + line2 + line3)
 }
 
 // Return label for Quit info.
 func GetQuitInfoLabel() string {
-	return "Quit app using : "
+	return "How to Quit ? : "
 }
 
 // Return string text for Quit info.
 func GetQuitInfoText() string {
-	return "Keyboard shortcut '<Ctrl> + c'"
+	return "Keyboard shortcut '<Ctrl> + c' or if downloading started then close Terminal directly"
 }
 
-// Return label for age-restricted note.
-func GetAgeRestrictedNoteLabel() string {
-	return "Restriction : "
+// Return label for important notes/limitations.
+func GetImportantNotesLimitsLabel() string {
+	return "Important Notes & Limitations : "
 }
 
-// Return string text for age-restricted note.
-func GetAgeRestrictedText() string {
-	return "Age-Restricted videos can NOT be downloaded..."
+// Return string text for important notes/limitations.
+func GetImportantNotesLimitsText() string {
+	return "https://github.com/apchavan/go-youtube-downloader#important-notes"
+}
+
+// Return string text for FFmpeg not found in system.
+func GetFFmpegNotFoundText(
+	videoFilePath string,
+	audioFilePath string,
+) string {
+	var line1 string = "❌ FFmpeg not found in environment's PATH.\n"
+	var line2 string = "(1) Install latest FFmpeg package from https://ffmpeg.org/.\n"
+	var line3 string = "(2) Then try below command with absolute file paths to manually merge video & audio : \n"
+	var line4 string = "ffmpeg -i \"audio_file_path\" -i \"video_file_path\" -c:a aac -c:v libx265 -preset ultrafast \"output_file_path\"\n"
+	return (line1 + line2 + line3 + line4)
+}
+
+// Return string text for files successfully merged to output using FFmpeg.
+func GetFFmpegMergeSuccessText(
+	outputFileName string,
+) string {
+	return fmt.Sprintf("🥳🎉 Final output stored as '%s'", outputFileName)
 }
