@@ -17,9 +17,9 @@ From project root enter command,
 
 ## Run Directly with Source Code:
 
-- Linux/UNIX/Windows :
+After installed [Go](https://go.dev), clone/download this project & from project root enter below command,
 
-    `go run ./cmd/go_youtube_downloader.go`
+`go run ./cmd/go_youtube_downloader.go`
 
 ## Important Notes:
 
