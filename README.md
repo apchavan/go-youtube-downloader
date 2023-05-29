@@ -27,7 +27,7 @@ After installing [Go](https://go.dev), clone/download this project & from projec
 
 - _Age-restricted_ videos can not be downloaded due to YouTube's Signature Ciphering.
 
-- YouTube have bandwidth limitations for each incoming request, around 10 MB per request. If any request gets more data than this size limit, then further requests will throttle download or connection may get terminated. So, to get better performance when downloading data & writing it to output file, it's divided into smaller chunks for consistency. Based on selected quality & size, the download time would differ.
+- YouTube have bandwidth limitations for each incoming request, around 10 MB per request. If any request gets more data than this size limit, then further requests will throttle download or connection may get terminated. So, to get better performance when downloading data & writing it to output file, it's divided into smaller chunks for consistency. Based on selected quality & size, the download time would be more or less.
 
 ## Special Thanks to Resources:
 
