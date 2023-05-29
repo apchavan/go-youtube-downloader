@@ -11,8 +11,8 @@ import (
 
 // Construct & return the application instance.
 func GetTuiAppLayout() *tview.Application {
-	// Create pointer object of `YouTubeVideoDetailsStruct` struct
-	youtubeVideoDetails := &YouTubeVideoDetailsStruct{}
+	// Create pointer object of `YouTubeDetailsStruct` struct
+	youtubeDetails := &YouTubeDetailsStruct{}
 
 	// Create application object
 	application := tview.NewApplication()
@@ -21,7 +21,7 @@ func GetTuiAppLayout() *tview.Application {
 	flexLayout := tview.NewFlex()
 
 	// Get input form
-	inputForm := getInputForm(application, youtubeVideoDetails)
+	inputForm := getInputForm(application, youtubeDetails)
 
 	// Get info form
 	infoForm := getInfoForm()
@@ -41,13 +41,13 @@ func GetTuiAppLayout() *tview.Application {
 }
 
 // Create & return input form
-func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVideoDetailsStruct) *tview.Form {
+func getInputForm(application *tview.Application, youtubeDetails *YouTubeDetailsStruct) *tview.Form {
 	inputForm := tview.NewForm()
 
 	inputForm = inputForm.AddInputField(
 		GetVideoIDLink_InputFieldLabel(), "", 0, nil,
 		func(urlText string) {
-			youtubeVideoDetails.VideoUrlOrID = urlText
+			youtubeDetails.VideoUrlOrID = urlText
 
 			if urlText != "" {
 				videoValidityMsgChannel := make(chan string)
@@ -55,7 +55,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				videoValidityMsg := ""
 
 				// Fetch & check video's metadata to see if video is valid
-				go youtubeVideoDetails.IsValidYouTubeURL(videoValidityMsgChannel, &isValidVideo)
+				go youtubeDetails.IsValidYouTubeURL(videoValidityMsgChannel, &isValidVideo)
 
 				for msg := range videoValidityMsgChannel {
 					videoValidityMsg = msg
@@ -76,7 +76,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				}
 
 				// Show video title in TextView
-				videoDetailsMap := youtubeVideoDetails.VideoMetaData["videoDetails"]
+				videoDetailsMap := youtubeDetails.VideoMetaData["videoDetails"]
 				videoTitle := videoDetailsMap.(map[string]interface{})["title"].(string)
 				inputForm = inputForm.AddTextView(GetYouTubeVideoTitleLabel(),
 					videoTitle,
@@ -87,11 +87,11 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				if inputForm.GetFormItemIndex(GetVideoQuality_FPS_Size_Type_DropdownLabel()) == -1 {
 					inputForm = inputForm.AddDropDown(
 						GetVideoQuality_FPS_Size_Type_DropdownLabel(),
-						getDescendingSize_VideoQualities(youtubeVideoDetails.VideoQualitiesMap),
+						getDescendingSize_VideoQualities(youtubeDetails.VideoQualitiesMap),
 						-1,
 
 						func(option string, optionIndex int) {
-							youtubeVideoDetails.SelectedVideoQuality = option
+							youtubeDetails.SelectedVideoQuality = option
 						})
 				}
 
@@ -100,11 +100,11 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 				if inputForm.GetFormItemIndex(GetAudioBitrate_Size_Type_DropdownLabel()) == -1 {
 					inputForm = inputForm.AddDropDown(
 						GetAudioBitrate_Size_Type_DropdownLabel(),
-						getDescendingSize_AudioQualities(youtubeVideoDetails.AudioQualitiesMap),
+						getDescendingSize_AudioQualities(youtubeDetails.AudioQualitiesMap),
 						-1,
 
 						func(option string, optionIndex int) {
-							youtubeVideoDetails.SelectedAudioQuality = option
+							youtubeDetails.SelectedAudioQuality = option
 						})
 				}
 
@@ -114,9 +114,9 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 						GetDownloadButtonLabel(),
 
 						func() {
-							if youtubeVideoDetails.VideoUrlOrID != "" &&
-								youtubeVideoDetails.SelectedVideoQuality != "" &&
-								youtubeVideoDetails.SelectedAudioQuality != "" {
+							if youtubeDetails.VideoUrlOrID != "" &&
+								youtubeDetails.SelectedVideoQuality != "" &&
+								youtubeDetails.SelectedAudioQuality != "" {
 								/* 1. Handle video downloading */
 
 								// Clear previous status TextViews if found any
@@ -124,7 +124,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 
 								// Before starting download, change the label & set button disabled
 								inputForm.GetButton(inputForm.GetButtonIndex(GetDownloadButtonLabel())).
-									SetLabel(GetDownloadButtonProgressLabel()).SetDisabled(true)
+									SetLabel(GetDownloadButtonProcessingLabel()).SetDisabled(true)
 
 								// Add & set TextView to show download in progress...
 								inputForm = inputForm.AddTextView(GetStatusLabel(),
@@ -137,7 +137,7 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 								// Handle video file download action
 								downloadProgressMsgChannel := make(chan string)
 								isDownloadFinished := false
-								go youtubeVideoDetails.DownloadYouTubeVideoFile(
+								go youtubeDetails.DownloadYouTubeVideoFile(
 									downloadProgressMsgChannel,
 									&isDownloadFinished,
 									application,
@@ -172,18 +172,13 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 									inputForm = inputForm.AddTextView(GetStatusLabel(),
 										GetDownloadFinishedMessage(videoTitle),
 										0, 0, true, true)
-
-									// In the end, reset the download button.
-									// Before starting download, change the label & set button disabled
-									// inputForm.GetButton(inputForm.GetButtonIndex(GetDownloadButtonProgressLabel())).
-									// 	SetLabel(GetDownloadButtonLabel()).SetDisabled(false)
 								}
 
 								/* 2. Handle audio downloading */
-								// Handle video file download action
+								// Handle audio file download action
 								downloadProgressMsgChannel = make(chan string)
 								isDownloadFinished = false
-								go youtubeVideoDetails.DownloadYouTubeAudioFile(
+								go youtubeDetails.DownloadYouTubeAudioFile(
 									downloadProgressMsgChannel,
 									&isDownloadFinished,
 									application,
@@ -218,12 +213,41 @@ func getInputForm(application *tview.Application, youtubeVideoDetails *YouTubeVi
 									inputForm = inputForm.AddTextView(GetStatusLabel(),
 										GetDownloadFinishedMessage(videoTitle),
 										0, 0, true, true)
-
-									// In the end, reset the download button.
-									// Before starting download, change the label & set button disabled
-									inputForm.GetButton(inputForm.GetButtonIndex(GetDownloadButtonProgressLabel())).
-										SetLabel(GetDownloadButtonLabel()).SetDisabled(false)
 								}
+
+								/* 3. Perform merging of video & audio files into single file using FFmpeg */
+								// Handle merging action
+								mergeProgressMsgChannel := make(chan string)
+								go CheckAndMergeWithFFmpeg(
+									youtubeDetails.DownloadedVideoFilePath,
+									youtubeDetails.DownloadedAudioFilePath,
+									videoTitle,
+									mergeProgressMsgChannel,
+								)
+
+								// Clear previous status TextViews if found any
+								removeControls(inputForm, false, false, false, true, false)
+
+								// Set TextView for showing merging status
+								mergeProgressTextView := tview.NewTextView().
+									SetLabel(GetStatusLabel()).
+									SetText(fmt.Sprintf("Merging video & audio for %s", videoTitle)).
+									SetChangedFunc(func() {
+										// Update the screen as per merge progress
+										application.ForceDraw().Sync()
+									})
+
+								// Add TextView to show video download progress
+								inputForm = inputForm.AddFormItem(mergeProgressTextView)
+
+								// Check the download progress & update the TextView
+								for mergeProgressMsg := range mergeProgressMsgChannel {
+									mergeProgressTextView.SetText(mergeProgressMsg)
+								}
+
+								// In the end, reset & enable the download button.
+								inputForm.GetButton(inputForm.GetButtonIndex(GetDownloadButtonProcessingLabel())).
+									SetLabel(GetDownloadButtonLabel()).SetDisabled(false)
 							}
 						}).SetButtonsAlign(tview.AlignRight)
 				}
@@ -267,8 +291,8 @@ func getInfoForm() *tview.Form {
 
 	// Add note about age-restricted videos not supported
 	infoForm = infoForm.AddTextView(
-		GetAgeRestrictedNoteLabel(),
-		GetAgeRestrictedText(),
+		GetImportantNotesLimitsLabel(),
+		GetImportantNotesLimitsText(),
 		0, 1, true, true)
 
 	// Add GitHub repo link
