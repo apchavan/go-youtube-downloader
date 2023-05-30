@@ -5,6 +5,8 @@ Command line app written in [Go](https://go.dev) to download videos using YouTub
 
 ## Build Binary:
 
+https://github.com/apchavan/go-youtube-downloader/assets/49102443/6ded3ee7-c5ed-49d3-bdf4-57147fef3c18
+
 From project root enter command,
 
 - On Linux/UNIX :
