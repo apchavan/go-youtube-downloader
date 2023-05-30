@@ -3,6 +3,14 @@
 
 Command line app written in [Go](https://go.dev) to download videos using YouTube URLs.
 
+## Working Demo:
+
+- When pasted YouTube Video ID/URL or YouTube Shorts ID/URL the app fetches the metadata from YouTube's internal APIs.
+
+- Then depending on quality selections for video & audio, the application downloads the Video/Shorts content by making of small sized data requests to the fetched content URLs.
+
+- In the end, if the [FFmpeg](https://ffmpeg.org/) exist, then both separate video & audio stream files are merged into single output file.
+
 ## Build Binary:
 
 From project root enter command,
