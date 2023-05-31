@@ -9,6 +9,14 @@ Command line app written in [Go](https://go.dev) to download Shorts & Videos usi
 
 - Ability to select from different content qualities.
 
+## Project Dependencies:
+
+At present, the project has 2 dependencies,
+
+1. [tview](https://github.com/rivo/tview) - Terminal UI library with rich, interactive widgets - written in Golang.
+
+2. [FFmpeg](https://ffmpeg.org/) - The leading cross-platform multimedia framework. It should be either installed in system or have latest static binary in project's root directory.
+
 ## Working Demo:
 
 1. When pasted either YouTube Video or Shorts ID/URL the app fetches the metadata from YouTube's internal APIs.
