@@ -3,13 +3,19 @@
 
 Command line app written in [Go](https://go.dev) to download Shorts & Videos using YouTube URLs/IDs.
 
+## Main Features:
+
+- YouTube Shorts & Videos downloading.
+
+- Ability to select from different content qualities.
+
 ## Working Demo:
 
-- When pasted YouTube Video ID/URL or YouTube Shorts ID/URL the app fetches the metadata from YouTube's internal APIs.
+1. When pasted either YouTube Video or Shorts ID/URL the app fetches the metadata from YouTube's internal APIs.
 
-- Then depending on quality selections for video & audio, the application downloads the Video/Shorts content by making of small sized data requests to the fetched content URLs.
+2. Then depending on quality selections for video & audio, the application downloads the Video/Shorts content by making of small sized data requests to the fetched content URLs.
 
-- In the end, if the [FFmpeg](https://ffmpeg.org/) exist, then both separate video & audio stream files are merged into single output file.
+3. In the end, if the [FFmpeg](https://ffmpeg.org/) exist, then both separate video & audio stream files are merged into single output file.
 
 https://github.com/apchavan/go-youtube-downloader/assets/49102443/e177f755-b607-40be-8d22-05f4850e97a7
 
@@ -17,11 +23,11 @@ https://github.com/apchavan/go-youtube-downloader/assets/49102443/e177f755-b607-
 
 From project root enter command,
 
-- On Linux/UNIX :
+- On Linux/UNIX :-
 
     `go build -o go_youtube_downloader ./cmd/go_youtube_downloader.go`
 
-- On Windows :
+- On Windows :-
 
     `go build -o go_youtube_downloader.exe ./cmd/go_youtube_downloader.go`
 
