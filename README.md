@@ -37,7 +37,7 @@ https://github.com/apchavan/go-youtube-downloader/assets/49102443/1b1c4fd9-f0fe-
 
 ## Important Notes:
 
-- Systems must have [FFmpeg](https://ffmpeg.org/) installed or have static binary in project directory to merge downloaded separate video & audio streams into a single file.
+- Systems must have [FFmpeg](https://ffmpeg.org/) installed or have latest static binary in project's root directory to merge downloaded separate video & audio streams into a single file.
 
 - _Age-restricted_ videos can not be downloaded due to YouTube's Signature Ciphering.
 
