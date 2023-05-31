@@ -1,5 +1,5 @@
 
-[![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/gomods/athens.svg)](https://github.com/gomods/athens) ![](https://img.shields.io/badge/OS-Linux-orange) ![](https://img.shields.io/badge/OS-macOS-black) ![](https://img.shields.io/badge/OS-Windows-blue) [![GoReportCard](https://goreportcard.com/badge/github.com/apchavan/go-youtube-downloader)](https://goreportcard.com/report/github.com/apchavan/go-youtube-downloader)
+[![GitHub go.mod Go version of a Go module](https://img.shields.io/github/go-mod/go-version/gomods/athens.svg)](https://github.com/gomods/athens) [![GoReportCard](https://goreportcard.com/badge/github.com/apchavan/go-youtube-downloader)](https://goreportcard.com/report/github.com/apchavan/go-youtube-downloader) ![](https://img.shields.io/badge/OS-Linux-orange) ![](https://img.shields.io/badge/OS-macOS-black) ![](https://img.shields.io/badge/OS-Windows-blue)
 
 # Go YouTube Downloader
 
