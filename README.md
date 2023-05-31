@@ -1,7 +1,7 @@
 
 # Go YouTube Downloader
 
-Command line app written in [Go](https://go.dev) to download Shorts/Videos using YouTube URLs/IDs.
+Command line app written in [Go](https://go.dev) to download Shorts & Videos using YouTube URLs/IDs.
 
 ## Working Demo:
 
