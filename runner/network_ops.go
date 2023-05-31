@@ -72,6 +72,7 @@ func getYouTubeVideoID_FromURL(videoURL string) string {
 
 	videoURL = strings.ReplaceAll(videoURL, "https://www.youtube.com/watch?v=", "")
 	videoURL = strings.ReplaceAll(videoURL, "https://youtu.be/", "")
+	videoURL = strings.ReplaceAll(videoURL, "https://www.youtube.com/shorts/", "")
 	videoURL = strings.ReplaceAll(videoURL, "https://youtube.com/shorts/", "")
 
 	return videoURL
