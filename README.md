@@ -1,7 +1,7 @@
 
 # Go YouTube Downloader
 
-Command line app written in [Go](https://go.dev) to download videos using YouTube URLs.
+Command line app written in [Go](https://go.dev) to download Shorts/Videos using YouTube URLs/IDs.
 
 ## Working Demo:
 
@@ -10,6 +10,8 @@ Command line app written in [Go](https://go.dev) to download videos using YouTub
 - Then depending on quality selections for video & audio, the application downloads the Video/Shorts content by making of small sized data requests to the fetched content URLs.
 
 - In the end, if the [FFmpeg](https://ffmpeg.org/) exist, then both separate video & audio stream files are merged into single output file.
+
+https://github.com/apchavan/go-youtube-downloader/assets/49102443/e177f755-b607-40be-8d22-05f4850e97a7
 
 ## Build Binary:
 
