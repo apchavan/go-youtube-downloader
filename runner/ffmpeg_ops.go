@@ -32,9 +32,9 @@ func CheckAndMergeWithFFmpeg(
 
 	if errors.Is(err, exec.ErrDot) {
 		// If FFmpeg binary is found in project root directory,
-		// then get absolute path of that binary.
+		// then it's not an error; rather get absolute path of that binary.
+		// Here we consider as err = nil.
 		execPath, _ = filepath.Abs(execPath)
-		err = nil
 	} else if err != nil {
 		mergeProgressMsgChannel <- GetFFmpegNotFoundText(videoFilePath, audioFilePath)
 		return
