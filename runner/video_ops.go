@@ -15,19 +15,7 @@ import (
 	"github.com/rivo/tview"
 )
 
-// Structure that holds :
-//
-// VideoUrl - A valid URL of YouTube to download video from.
-//
-// SelectedVideoQuality - User's video quality preference.
-//
-// SelectedAudioQuality - User's audio quality preference.
-//
-// VideoMetaData - The map of metadata information about video returned by YouTube's internal API.
-//
-// VideoQualities - Collection of all available video qualities for provided video.
-//
-// AudioQualities - Collection of all available audio qualities for provided video.
+// Structure that holds required details about YouTube Shorts/Video.
 type YouTubeDetailsStruct struct {
 	VideoUrlOrID            string                 // Store the YouTube's video URL or ID
 	SelectedVideoQuality    string                 // Store the user's selected video quality
