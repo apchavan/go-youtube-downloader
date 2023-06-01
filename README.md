@@ -33,11 +33,11 @@ https://github.com/apchavan/go-youtube-downloader/assets/49102443/e177f755-b607-
 
 From project root enter command,
 
-- On Linux/UNIX :-
+- On Linux/UNIX,
 
     `go build -o go_youtube_downloader ./cmd/go_youtube_downloader.go`
 
-- On Windows :-
+- On Windows,
 
     `go build -o go_youtube_downloader.exe ./cmd/go_youtube_downloader.go`
 
