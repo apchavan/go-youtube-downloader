@@ -74,3 +74,5 @@ https://github.com/apchavan/go-youtube-downloader/assets/49102443/1b1c4fd9-f0fe-
 - [Golang Download Files Example](https://golangdocs.com/golang-download-files)
 
 - [Team NewPipe](https://github.com/TeamNewPipe)
+
+- [Advanced command execution in Go with os/exec](https://blog.kowalczyk.info/article/wOYk/advanced-command-execution-in-go-with-osexec.html)
