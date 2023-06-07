@@ -21,9 +21,9 @@ At present, the project has 2 dependencies,
 
 ## Working Demo
 
-1. When pasted either YouTube Video or Shorts ID/URL the app fetches the metadata from YouTube's internal APIs.
+1. When pasted either YouTube Shorts/Video ID or URL, the app fetches the metadata from YouTube's internal APIs.
 
-2. Then depending on quality selections for video & audio, the application downloads the Video/Shorts content by making of small sized data requests to the fetched content URLs.
+2. Then depending on quality selections for video & audio, the application downloads the Shorts/Video content by making of small sized data requests to the fetched content URLs.
 
 3. In the end, if the [FFmpeg](https://ffmpeg.org/) exist, then both separate video & audio stream files are merged into single output file.
 
