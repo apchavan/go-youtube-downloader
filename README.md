@@ -17,7 +17,7 @@ At present, the project has 2 dependencies,
 
 1. [tview](https://github.com/rivo/tview) - Terminal UI library with rich, interactive widgets - written in Golang.
 
-2. [FFmpeg](https://ffmpeg.org/) - The leading cross-platform multimedia framework. It should be installed in system or at-least have latest static binary in project's root directory. It's more of an external runtime dependency.
+2. [FFmpeg](https://ffmpeg.org/) - The leading cross-platform multimedia framework. It should be installed in system or at-least have latest static binary in project's root directory. It's more of an _external runtime dependency_.
 
 ## Working Demo
 
