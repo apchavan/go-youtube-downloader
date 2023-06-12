@@ -45,7 +45,7 @@ https://github.com/apchavan/go-youtube-downloader/assets/49102443/6ded3ee7-c5ed-
 
 ## Run Directly with Source Code
 
-After installing [Go](https://go.dev), clone/download this project & from project root enter below command,
+After installing [Go](https://go.dev), clone/download this project & enter below command from project's root,
 
 `go run ./cmd/go_youtube_downloader.go`
 
