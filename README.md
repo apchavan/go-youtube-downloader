@@ -31,7 +31,7 @@ https://github.com/apchavan/go-youtube-downloader/assets/49102443/e177f755-b607-
 
 ## Build Binary
 
-From project root enter command,
+After installing [Go](https://go.dev), enter below command from project's root,
 
 - On Linux/UNIX,
 
