@@ -2,7 +2,7 @@ module github.com/apchavan/go-youtube-downloader
 
 go 1.20
 
-require github.com/rivo/tview v0.0.0-20230618112000-a5e7b2865ee1
+require github.com/rivo/tview v0.0.0-20230621164836-6cc0565babaf
 
 require (
 	github.com/gdamore/encoding v1.0.0 // indirect
