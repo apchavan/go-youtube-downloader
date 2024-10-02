@@ -5,6 +5,8 @@
 
 Command line/terminal based app written in [Go](https://go.dev) to download Shorts & Videos using YouTube URLs/IDs.
 
+***Note***: If you're looking for a ready-to-use tool, please check [pinned issues](https://github.com/apchavan/go-youtube-downloader/issues) for this repo.
+
 ## Main Features
 
 - YouTube Shorts & Videos downloading.
